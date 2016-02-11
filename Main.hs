@@ -6,6 +6,7 @@ import qualified Data.Text as T
 import Prelude hiding (FilePath)
 import qualified Control.Foldl as Fold
 import Control.Monad
+import qualified System.IO as SIO
 
 data Installation = Installation {getPath :: FilePath, isInstalled :: Bool} deriving (Eq, Show)
 
@@ -60,6 +61,8 @@ removeExtraInstallations program = do
         firstInstalled:_ -> showRemovePrompt firstInstalled $ filter (not . isInstalled) installations
 
 main :: IO ()
-main = sh $ do
-  brewList <- inshell "brew list" empty
-  mapM_ removeExtraInstallations $ T.lines brewList
+main = do
+  SIO.hSetBuffering SIO.stdout SIO.NoBuffering
+  sh $ do
+    brewList <- inshell "brew list" empty
+    mapM_ removeExtraInstallations $ T.lines brewList

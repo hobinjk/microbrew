@@ -26,7 +26,7 @@ removeExtraInstallation (Installation _ True) = empty
 -- removeExtraInstallation (Installation path False) = liftIO $ echo $ case toText path of Right p -> p
 --                                                                                         Left  errorMessage -> errorMessage
 removeExtraInstallation (Installation path False) = liftIO $ do
-                                                                echo $ T.concat ["Removing ", getPathText path]
+                                                                echo $ unsafeTextToLine $ T.concat ["Removing ", getPathText path]
                                                                 rmtree path
 
 isYesAnswer :: Text -> Bool
@@ -42,8 +42,8 @@ showRemovePrompt :: Installation -> [Installation] -> Shell ()
 showRemovePrompt _ [] = empty
 showRemovePrompt firstInstalled obsoleteInstallations = do
   response <- liftIO $ do
-                 echo $ T.concat [getPathText $ getPath firstInstalled, " obsoletes:"]
-                 mapM_ (echo . getPathText . getPath) obsoleteInstallations
+                 echo $ unsafeTextToLine $ T.concat [getPathText $ getPath firstInstalled, " obsoletes:"]
+                 mapM_ (echo . unsafeTextToLine . getPathText . getPath) obsoleteInstallations
                  putStr "Proceed with deletion [yN]?"
                  getLine
   if isYesAnswer $ T.pack response
@@ -51,7 +51,7 @@ showRemovePrompt firstInstalled obsoleteInstallations = do
      else empty
 
 getInstallations :: Text -> Shell [Installation]
-getInstallations program = liftM parseInstallations (inshell (T.concat ["brew info ", program]) empty)
+getInstallations program = liftM (parseInstallations . lineToText) (inshell (T.concat ["brew info ", program]) empty)
 
 removeExtraInstallations :: Text -> Shell ()
 removeExtraInstallations program = do
@@ -65,4 +65,5 @@ main = do
   SIO.hSetBuffering SIO.stdout SIO.NoBuffering
   sh $ do
     brewList <- inshell "brew list" empty
-    mapM_ removeExtraInstallations $ T.lines brewList
+    echo brewList
+    mapM_ removeExtraInstallations $ T.lines $ lineToText brewList
